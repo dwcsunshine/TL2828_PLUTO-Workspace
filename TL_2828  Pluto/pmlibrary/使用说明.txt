@@ -1,0 +1,36 @@
+1. pmInit(eeeemarket_t value) 函数
+  将此函数放在初始化部分， 参数根据不同的国家采用不同，这个我以后会告诉你具体应该使用什么参数。目前请使用默认参数 “POLLUTION_MARKET”
+  参数定义在pmlib.h中
+
+2. pmScan(unsigned char Para1, unsigned char Para2);
+  将此函数放入500us的定时器循环中， Para1是颗粒物传感器对应使用的单片机的IO口，例如PORT0.1(请使用你所使用的MCU的端口定义方式）, Para2赋予与Para1一样的IO口
+
+3. pmCalculate()
+  将此函数放入1s的定时器循环中
+
+4. pmGetPM25Value()
+  将此函数放到你需要得到PM2.5数值的地方。 函数返回值定义如下：
+  /******************************************************************************
+ * Function:    pmGetPM25Value
+ * Input:       None
+ * Return:      16 bit PM2.5 value
+ * Remarks:     Call this function to return PM2.5 value. If the sensor
+ *              is still warming up, this function returns 0x0000.
+ *              Use this value to display the value in DDP_PM2_5_LEVEL mode.
+ *              Also use this function for the "pm25" communication parameter.
+ ******************************************************************************/
+ 5. pmGetIAIValue(operating_mode_t mode, ddp_mode_t ddp)
+  将此函数放到你需要得到IAI等级的地方，参数目前默认先使用  “MODE_GENERAL"  以及"DDP_PM2_5_LEVEL",返回值为uint型，具体说明如下：
+/******************************************************************************
+ * Function: pmGetIAIValue
+ * Input:       operating_mode_t mode -> reflects the current operating mode
+ *              ddp_mode_t ddp -> reflects the current device display parameter
+ * Return:      16 bit Air Quality value
+ * Remarks:     This function returns the AirQuality depending on the current 
+ *              operating mode and the dispay status.
+ *              Use this function for speed control, AQI led display and
+ *              the display value in DDP_IAI_LEVEL mode.
+ *              Also use this function for the "iaql" communication parameter.
+ ******************************************************************************/
+
+所有函数详细说明都可以在pmlib.h中找到

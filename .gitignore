@@ -1,0 +1,97 @@
+TL_2828  Pluto/TL_2828.utdt
+TL_2828  Pluto/TL_2828.uvguix.28000078
+TL_2828  Pluto/TL_2828.uvguix.Administrator
+TL_2828  Pluto/TL_2828.uvguix.dwcsu
+TL_2828  Pluto/TL_2828.uvguix.mxchip
+TL_2828  Pluto/TL_2828.uvguix.yanfayb01
+TL_2828  Pluto/TL_2828.uvoptx
+TL_2828  Pluto/TL_2828.uvprojx
+TL_2828  Pluto/TL_2828_filelist.txt
+TL_2828  Pluto/Listings/
+TL_2828  Pluto/TL_2828.si4project/
+TL_2828  Pluto/buildinfo.gpdsc
+TL_2828  Pluto/configuration.xml
+TL_2828  Pluto/EventRecorderStub.scvd
+TL_2828  Pluto/JLinkLog.txt
+TL_2828  Pluto/JLinkSettings.ini
+TL_2828  Pluto/R7FA2E1A72DFL.pincfg
+TL_2828  Pluto/R7FA2E1A72DFL.xml
+TL_2828  Pluto/ra_cfg.txt
+TL_2828  Pluto/rasc_version.txt
+TL_2828  Pluto/qe_gen - 2021.12.13/qe_touch_config.c
+TL_2828  Pluto/qe_gen - 2021.12.13/qe_touch_config.h
+TL_2828  Pluto/qe_gen - 2021.12.13/qe_touch_define.h
+TL_2828  Pluto/qe_gen - 2021.12.13/qe_touch_sample.c
+TL_2828  Pluto/qe_gen - 2021.12.09 保留/qe_touch_config.c
+TL_2828  Pluto/qe_gen - 2021.12.09 保留/qe_touch_config.h
+TL_2828  Pluto/qe_gen - 2021.12.09 保留/qe_touch_define.h
+TL_2828  Pluto/qe_gen - 2021.12.09 保留/qe_touch_sample.c
+TL_2828  Pluto/Objects/bsp_clocks.d
+TL_2828  Pluto/Objects/bsp_clocks.o
+TL_2828  Pluto/Objects/bsp_common.d
+TL_2828  Pluto/Objects/bsp_common.o
+TL_2828  Pluto/Objects/bsp_delay.d
+TL_2828  Pluto/Objects/bsp_delay.o
+TL_2828  Pluto/Objects/bsp_group_irq.d
+TL_2828  Pluto/Objects/bsp_group_irq.o
+TL_2828  Pluto/Objects/bsp_guard.d
+TL_2828  Pluto/Objects/bsp_guard.o
+TL_2828  Pluto/Objects/bsp_io.d
+TL_2828  Pluto/Objects/bsp_io.o
+TL_2828  Pluto/Objects/bsp_irq.d
+TL_2828  Pluto/Objects/bsp_irq.o
+TL_2828  Pluto/Objects/bsp_register_protection.d
+TL_2828  Pluto/Objects/bsp_register_protection.o
+TL_2828  Pluto/Objects/bsp_rom_registers.d
+TL_2828  Pluto/Objects/bsp_rom_registers.o
+TL_2828  Pluto/Objects/bsp_sbrk.d
+TL_2828  Pluto/Objects/bsp_sbrk.o
+TL_2828  Pluto/Objects/bsp_security.d
+TL_2828  Pluto/Objects/bsp_security.o
+TL_2828  Pluto/Objects/common_data.d
+TL_2828  Pluto/Objects/common_data.o
+TL_2828  Pluto/Objects/ExtDll.iex
+TL_2828  Pluto/Objects/hal_data.d
+TL_2828  Pluto/Objects/hal_data.o
+TL_2828  Pluto/Objects/hal_entry.d
+TL_2828  Pluto/Objects/hal_entry.o
+TL_2828  Pluto/Objects/main.d
+TL_2828  Pluto/Objects/main.o
+TL_2828  Pluto/Objects/pin_data.d
+TL_2828  Pluto/Objects/pin_data.o
+TL_2828  Pluto/Objects/qe_touch_config.d
+TL_2828  Pluto/Objects/qe_touch_config.o
+TL_2828  Pluto/Objects/qe_touch_sample.d
+TL_2828  Pluto/Objects/qe_touch_sample.o
+TL_2828  Pluto/Objects/r_adc.d
+TL_2828  Pluto/Objects/r_adc.o
+TL_2828  Pluto/Objects/r_ctsu.d
+TL_2828  Pluto/Objects/r_ctsu.o
+TL_2828  Pluto/Objects/r_flash_lp.d
+TL_2828  Pluto/Objects/r_flash_lp.o
+TL_2828  Pluto/Objects/r_gpt.d
+TL_2828  Pluto/Objects/r_gpt.o
+TL_2828  Pluto/Objects/r_icu.d
+TL_2828  Pluto/Objects/r_icu.o
+TL_2828  Pluto/Objects/r_ioport.d
+TL_2828  Pluto/Objects/r_ioport.o
+TL_2828  Pluto/Objects/r_lvd.d
+TL_2828  Pluto/Objects/r_lvd.o
+TL_2828  Pluto/Objects/r_sci_uart.d
+TL_2828  Pluto/Objects/r_sci_uart.o
+TL_2828  Pluto/Objects/r_wdt.d
+TL_2828  Pluto/Objects/r_wdt.o
+TL_2828  Pluto/Objects/rm_touch.d
+TL_2828  Pluto/Objects/rm_touch.o
+TL_2828  Pluto/Objects/startup.d
+TL_2828  Pluto/Objects/startup.o
+TL_2828  Pluto/Objects/system.d
+TL_2828  Pluto/Objects/system.o
+TL_2828  Pluto/Objects/TL_2828.axf
+TL_2828  Pluto/Objects/TL_2828.build_log.htm
+TL_2828  Pluto/Objects/TL_2828.hex
+TL_2828  Pluto/Objects/TL_2828.htm
+TL_2828  Pluto/Objects/TL_2828.lnp
+TL_2828  Pluto/Objects/TL_2828_Target 1.dep
+TL_2828  Pluto/Objects/vector_data.d
+TL_2828  Pluto/Objects/vector_data.o
