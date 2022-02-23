@@ -753,235 +753,242 @@ void  fFacmode_Disp_Ctrl(void)
 	Sys.eLight20S_Cnt = 20; // 只要有按键20计时重新计算
 	DI.Port3_air.para7.opmode = emodeTurbo;  // 模式设为Turbo
 	Sys.wifisetcnt = 0;
-	switch(Sys.Factorysteps)
+	LED_Ring_Dis();     //解决进入自检之后 部分灯光不会清除的问题
+	LED_Wifi_Amber_Dis();
+	LED_Wifi_White_Dis();
+	if((Sys.Errcode&(bit0|bit1))==0) //解决故障状态下LED辉光问题
 	{
-		case 0:
-			Motorpara.Spd_Output[0] = Motorpara.Spd_Off[0];
-			Motorpara.Spd_Output[1] = Motorpara.Spd_Off[1];
-			LED_Filter_En ();
-			if(delay_3Scnt==31)
-			{
-				fFLASH_WRITE(FLASH_BLOCK1_FILTER_4000,&t_src[0],4); //滤网数据写到FLASH_BLOCK1_FILTER_4000 经常会改变
-			}
-			else if(delay_3Scnt==0)
-			{
-				Sys.Factorysteps = 1;
-			}
-			break;
-		case 1:
-			for(i=0; i<4; i++) //获取数据参数
-		    {
-		        t_src[i+4] = *((uint8_t *)(FLASH_FILTER_400+i));
-		    }
-			if(memcmp(&t_src[0],&t_src[4],4)==0) //数据参数获取 存储在Block0中
-			{
-				if((flashcnt%1000)<500)
-				{
-					LED_Filter_Dis ();
-				}
-				else
-				{
-					LED_Filter_En ();
-				}
-				flashcnt++;
-				if(flashcnt>=3000)
-				{
-					flashcnt = 0;
-					Sys.Factorysteps = 2;
-					LED_Filter_Dis ();
-				}
-			}
-			else
-			{
-				if(gFre1hzflashflg)
-				{
-					LED_Filter_En ();
-				}
-				else
-				{
-					LED_Filter_Dis ();
-				}
-			}
-			break;
-		case 2:
-			if(gFre1hzflashflg)  //闪烁显示
-					LED_Wifi_Amber_En();
-				else
-					LED_Wifi_Amber_Dis();
+        switch(Sys.Factorysteps)
+        {
+            case 0:
+                Motorpara.Spd_Output[0] = Motorpara.Spd_Off[0];
+                Motorpara.Spd_Output[1] = Motorpara.Spd_Off[1];
+                LED_Filter_En ();
+                if(delay_3Scnt==31)
+                {
+                    fFLASH_WRITE(FLASH_BLOCK1_FILTER_4000,&t_src[0],4); //滤网数据写到FLASH_BLOCK1_FILTER_4000 经常会改变
+                }
+                else if(delay_3Scnt==0)
+                {
+                    Sys.Factorysteps = 1;
+                }
+                break;
+            case 1:
+                for(i=0; i<4; i++) //获取数据参数
+                    {
+                            t_src[i+4] = *((uint8_t *)(FLASH_FILTER_400+i));
+                    }
+                if(memcmp(&t_src[0],&t_src[4],4)==0) //数据参数获取 存储在Block0中
+                {
+                    if((flashcnt%1000)<500)
+                    {
+                        LED_Filter_Dis ();
+                    }
+                    else
+                    {
+                        LED_Filter_En ();
+                    }
+                    flashcnt++;
+                    if(flashcnt>=3000)
+                    {
+                        flashcnt = 0;
+                        Sys.Factorysteps = 2;
+                        LED_Filter_Dis ();
+                    }
+                }
+                else
+                {
+                    if(gFre1hzflashflg)
+                    {
+                        LED_Filter_En ();
+                    }
+                    else
+                    {
+                        LED_Filter_Dis ();
+                    }
+                }
+                break;
+            case 2:
+                if(gFre1hzflashflg)  //闪烁显示
+                        LED_Wifi_Amber_En();
+                    else
+                        LED_Wifi_Amber_Dis();
 
-			break;
-		case 3:	
-			Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
-			Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
-			DI.Port2_wifiu.para2.connection = wifi_C_not_connected;
-			DI.Port2_wifiu.para3.setup = wifi_S_requested; // 不会进入快速滤网了 把wifi清除 20220216	
+                break;
+            case 3:	
+                Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
+                Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
+                DI.Port2_wifiu.para2.connection = wifi_C_not_connected;
+                DI.Port2_wifiu.para3.setup = wifi_S_requested; // 不会进入快速滤网了 把wifi清除 20220216	
 
-			Motorpara.Spd_Output[0] = Motorpara.Spd_Sleep[0];
-			Motorpara.Spd_Output[1] = Motorpara.Spd_Sleep[1];
-			if(Sys.steadyflg == 1)
-			{
-				if(gFre1hzflashflg)
-				{
-					pCom2=0;
-				}
-				else
-				{
-					pCom2=1;
-				}
-			}
-			else
-			{
-				pCom2=0;
-			}
-			break;
-		case 4:
-			pCom2=0;pCom4=0;
-			Motorpara.Spd_Output[0] = Motorpara.Spd2[0];
-			Motorpara.Spd_Output[1] = Motorpara.Spd2[1];
-			Sys.Factorysteps = 5;
-			
-			break;
-		case 5:
-			if(Sys.steadyflg == 1)
-			{
-				if(gFre1hzflashflg)
-				{
-					pCom2=0;pCom4=0;
-				}
-				else
-				{
-					pCom2=1;pCom4=1;
-				}
-			}
-			else
-			{
-				pCom2=0;pCom4=0;
-			}
-			break;
-		case 6:
-			Motorpara.Spd_Output[0] = Motorpara.Spd3[0];
-			Motorpara.Spd_Output[1] = Motorpara.Spd3[1];
-			pCom2=0;pCom3=0;
-			Sys.Factorysteps = 7;
-			break;
-		case 7:
-			if(Sys.steadyflg == 1)
-			{
-				if(gFre1hzflashflg)
-				{
-					pCom2=0;pCom3=0;
-				}
-				else
-				{
-					pCom2=1;pCom3=1;
-				}
-			}
-			else
-			{
-				pCom2=0;pCom3=0;
-			}
-			break;
-		case 8:
-			Motorpara.Spd_Output[0] = Motorpara.Spd_Turbo[0];
-			Motorpara.Spd_Output[1] = Motorpara.Spd_Turbo[1];
-			pCom2=0;pCom4=0;pCom3=0;
-			Sys.Factorysteps = 9;
-			break;
-		case 9:
-			if(Sys.steadyflg == 1)
-			{
-				if(gFre1hzflashflg)
-				{
-					pCom2=0;pCom4=0;pCom3=0;
-				}
-				else
-				{
-					pCom2=1;pCom4=1;;pCom3=1;
-				}
-			}
-			else
-			{
-				pCom2=0;pCom4=0;pCom3=0;
-			}
-			break;
-		case 10:
-			
-			break;
-		case 11: //显示SKU
-			if(flashcnt>=2000)
-			{
-				if((flashcnt%1000)<500)
-				{
-					LED_Ring_Blue_En ();
-				}
-				else
-				{
-					LED_Ring_Blue_Dis ();
-				}
-			}
-			else
-			{
-				if((flashcnt%1000)<500)
-				{
-					LED_Ring_Red_En();
-				}
-				else
-				{
-					LED_Ring_Red_Dis();
-				}
-			}
-			flashcnt++;
-			if(flashcnt>=4000)
-			{
-				flashcnt = 0;
-			}
-			break;
-		case 12: //显示版本
-			flashpart0 = (DI.Port1_device.para12.node0applicationversion[2]-0x30)*1000;
-			flashpart1 = ((DI.Port1_device.para12.node0applicationversion[4]-0x30)+1)*1000+flashpart0;
-			if(flashcnt<flashpart0)
-			{
-				if((flashcnt%1000)<500)
-				{
-					LED_Ring_Blue_En ();
-				}
-				else
-				{
-					LED_Ring_Blue_Dis ();
-				}
-			}
-			else
-			{
-				if((flashcnt%1000)<500)
-				{
-					LED_Filter_En ();
-				}
-				else
-				{
-					LED_Filter_Dis ();
-				}
-			}
-			flashcnt++;
-			if(flashcnt>=flashpart1)
-			{
-				flashcnt = 0;
-			}
-			break;
-		case 13: //复位
-//			fDeviceSys_Init();
-//			fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
-//			DI.Port3_air.para2.power = 0;	
-//			Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
-//			PWR_WIFI_EN();  // 开启wifi电源
-//			Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
-//			DI.Port2_wifiu.para2.connection = wifi_C_not_connected;
-//			DI.Port2_wifiu.para3.setup = wifi_S_requested;
-//			Sys.wifisetcnt = 0; // 次数清除
-//			Sys.Factoryflg = 0;
-			return;
-			break;
-			
+                Motorpara.Spd_Output[0] = Motorpara.Spd_Sleep[0];
+                Motorpara.Spd_Output[1] = Motorpara.Spd_Sleep[1];
+                if(Sys.steadyflg == 1)
+                {
+                    if(gFre1hzflashflg)
+                    {
+                        pCom2=0;
+                    }
+                    else
+                    {
+                        pCom2=1;
+                    }
+                }
+                else
+                {
+                    pCom2=0;
+                }
+                break;
+            case 4:
+                pCom2=0;pCom4=0;
+                Motorpara.Spd_Output[0] = Motorpara.Spd2[0];
+                Motorpara.Spd_Output[1] = Motorpara.Spd2[1];
+                Sys.Factorysteps = 5;
+                
+                break;
+            case 5:
+                if(Sys.steadyflg == 1)
+                {
+                    if(gFre1hzflashflg)
+                    {
+                        pCom2=0;pCom4=0;
+                    }
+                    else
+                    {
+                        pCom2=1;pCom4=1;
+                    }
+                }
+                else
+                {
+                    pCom2=0;pCom4=0;
+                }
+                break;
+            case 6:
+                Motorpara.Spd_Output[0] = Motorpara.Spd3[0];
+                Motorpara.Spd_Output[1] = Motorpara.Spd3[1];
+                pCom2=0;pCom3=0;
+                Sys.Factorysteps = 7;
+                break;
+            case 7:
+                if(Sys.steadyflg == 1)
+                {
+                    if(gFre1hzflashflg)
+                    {
+                        pCom2=0;pCom3=0;
+                    }
+                    else
+                    {
+                        pCom2=1;pCom3=1;
+                    }
+                }
+                else
+                {
+                    pCom2=0;pCom3=0;
+                }
+                break;
+            case 8:
+                Motorpara.Spd_Output[0] = Motorpara.Spd_Turbo[0];
+                Motorpara.Spd_Output[1] = Motorpara.Spd_Turbo[1];
+                pCom2=0;pCom4=0;pCom3=0;
+                Sys.Factorysteps = 9;
+                break;
+            case 9:
+                if(Sys.steadyflg == 1)
+                {
+                    if(gFre1hzflashflg)
+                    {
+                        pCom2=0;pCom4=0;pCom3=0;
+                    }
+                    else
+                    {
+                        pCom2=1;pCom4=1;;pCom3=1;
+                    }
+                }
+                else
+                {
+                    pCom2=0;pCom4=0;pCom3=0;
+                }
+                break;
+            case 10:
+                
+                break;
+            case 11: //显示SKU
+                if(flashcnt>=2000)
+                {
+                    if((flashcnt%1000)<500)
+                    {
+                        LED_Ring_Blue_En ();
+                    }
+                    else
+                    {
+                        LED_Ring_Blue_Dis ();
+                    }
+                }
+                else
+                {
+                    if((flashcnt%1000)<500)
+                    {
+                        LED_Ring_Red_En();
+                    }
+                    else
+                    {
+                        LED_Ring_Red_Dis();
+                    }
+                }
+                flashcnt++;
+                if(flashcnt>=4000)
+                {
+                    flashcnt = 0;
+                }
+                break;
+            case 12: //显示版本
+                flashpart0 = (DI.Port1_device.para12.node0applicationversion[2]-0x30)*1000;
+                flashpart1 = ((DI.Port1_device.para12.node0applicationversion[4]-0x30)+1)*1000+flashpart0;
+                if(flashcnt<flashpart0)
+                {
+                    if((flashcnt%1000)<500)
+                    {
+                        LED_Ring_Blue_En ();
+                    }
+                    else
+                    {
+                        LED_Ring_Blue_Dis ();
+                    }
+                }
+                else
+                {
+                    if((flashcnt%1000)<500)
+                    {
+                        LED_Filter_En ();
+                    }
+                    else
+                    {
+                        LED_Filter_Dis ();
+                    }
+                }
+                flashcnt++;
+                if(flashcnt>=flashpart1)
+                {
+                    flashcnt = 0;
+                }
+                break;
+            case 13: //复位
+    //			fDeviceSys_Init();
+    //			fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
+    //			DI.Port3_air.para2.power = 0;	
+    //			Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
+    //			PWR_WIFI_EN();  // 开启wifi电源
+    //			Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
+    //			DI.Port2_wifiu.para2.connection = wifi_C_not_connected;
+    //			DI.Port2_wifiu.para3.setup = wifi_S_requested;
+    //			Sys.wifisetcnt = 0; // 次数清除
+    //			Sys.Factoryflg = 0;
+                return;
+                break;
+                
+        }
 	}
+	
 
 	if(Sys.Errcode&bit0)
 	{
@@ -991,7 +998,7 @@ void  fFacmode_Disp_Ctrl(void)
 	else if(Sys.Errcode&bit1)
 	{
 		LED_Ring_Dis();
-		pCom3 = 0;  //风机故障亮RB2
+		pCom3 = 0;  //PM25传感器故障亮RB2
 	}
 
 	if(Sys.Factorysteps>=3) //wifi检测在第3步骤时候会开启
@@ -1240,6 +1247,8 @@ void fFactory_Key_Process(void) //T =5ms
 	    KeyStatus &= ~KEY_Available; //键值失效
 	    Sys.Sleep3S_Cnt = 3;  // 睡眠模式下重新计数
 	    dat = KeyValue ;  //取按键值
+        if((Sys.Errcode&(bit0|bit1))!=0)
+            dat = 0;
 	    if(Sys.Factoryflg == 1)
 	    {
 			 switch(dat)
@@ -1308,6 +1317,7 @@ void fFactory_Key_Process(void) //T =5ms
 						Sys.Factorysteps = 13;
 						fDeviceSys_Init();
 						fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
+						fMemory_Read(); //确保可以正常读取信息
 						DI.Port3_air.para2.power = 0;	
 						Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
 						PWR_WIFI_EN();  // 开启wifi电源
@@ -1323,22 +1333,22 @@ void fFactory_Key_Process(void) //T =5ms
 					if(KeyStatus&KEY_LongOnce)
 			        {
 			            KeyStatus &=~KEY_LongOnce;
-						if(Sys.Factorysteps <=2)
-						{
-							Sys.Factorysteps = 13;
-							Sys.wifisetcnt = 0; // 次数清除
-							Sys.Factoryflg = 0;
-							if(Sys.FilterTestFlg == 0)
-							{
-								DI.Port3_air.para2.power = 1;  //滤网测试模式 开机
-								Sys.FilterTestFlg = 1; // 滤网测试模式
-								PWR_WIFI_EN();  // 开启wifi电源
-								Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
-								fDeviceSys_Init(); //系统参数初始化
+						// if(Sys.Factorysteps <=2) //取消进入自检
+						// {
+						// 	Sys.Factorysteps = 13;
+						// 	Sys.wifisetcnt = 0; // 次数清除
+						// 	Sys.Factoryflg = 0;
+						// 	if(Sys.FilterTestFlg == 0)
+						// 	{
+						// 		DI.Port3_air.para2.power = 1;  //滤网测试模式 开机
+						// 		Sys.FilterTestFlg = 1; // 滤网测试模式
+						// 		PWR_WIFI_EN();  // 开启wifi电源
+						// 		Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
+						// 		fDeviceSys_Init(); //系统参数初始化
 								
-								Buz_Twice();	
-							}
-						}
+						// 		Buz_Twice();	
+						// 	}
+						// }
 			        }
 				break;
 		   		
@@ -2042,9 +2052,45 @@ void fDisp_LedDriver(void)
 	static u8 s_Dim1_Cnt=0;
 	volatile u16 gAQIduty_Bluetmp = 0;
 	volatile u16 gAQIduty_Redtmp = 0;
+    static u16 flashcnt = 0;
+    static u8 cnt = 0;
 	if(Sys.Factoryflg == 0) //非工厂模式下
-   LED_Ring_Dis();
-
+         LED_Ring_Dis();
+if(Sys.Setupflg == 1 &&Sys.Factoryflg==0 ) // 非工厂模式下  天瑞写入配置信息之后可以闪烁显示国家信息.
+{
+    if(++cnt>=8)
+    {
+        cnt = 0;
+        if(flashcnt>=2000)
+        {
+            if((flashcnt%1000)<500)
+            {
+                LED_Ring_Blue_En ();
+            }
+            else
+            {
+                LED_Ring_Blue_Dis ();
+            }
+        }
+        else
+        {
+            if((flashcnt%1000)<500)
+            {
+                LED_Ring_Red_En();
+            }
+            else
+            {
+                LED_Ring_Red_Dis();
+            }
+        }
+        flashcnt++;
+        if(flashcnt>=4000)
+        {
+            flashcnt = 0;
+        }
+    }
+    return;
+}
 //------------------------AQI驱动--------------------------
 	if(Sys.decoring==edeco_Pink)  //粉色显示
 	{
@@ -2646,7 +2692,6 @@ void fMotor_Ctrl(void)
 				if(abs(Pid.E_delta) <=20)
 				{
 					Sys.steadyflg = 1;
-		
 				}
 
 				if(abs(Pid.E_delta) >=30)
@@ -2741,10 +2786,9 @@ void fMotor_Ctrl(void)
 //			if(Dutyoutput>=Duty_Limit_max)
 //				Dutyoutput = Duty_Limit_max;
 //		R_GPT_PeriodSet(&g_PWM_motor_ctrl, 3000);
- if(Sys.motorpwmoutput==0)
- 	Dutyoutput = Duty_outputoff;
-R_GPT_DutyCycleSet(&g_PWM_motor_ctrl, (uint32_t)Dutyoutput,GPT_IO_PIN_GTIOCA);
-
+        if(Sys.motorpwmoutput==0)
+ 	        Dutyoutput = Duty_outputoff;    
+        R_GPT_DutyCycleSet(&g_PWM_motor_ctrl, (uint32_t)Dutyoutput,GPT_IO_PIN_GTIOCA);
 	}
 	
 }
@@ -2758,7 +2802,7 @@ void fMemory_Deal(void)  //掉电记忆处理
 	u8 i = 0;
 	u16 volatile datatmp = 0;
 	u8 t_src[50] = {0};
-	if(Sys.Factoryflg || Sys.FilterTestFlg) //工厂模式和滤网测试模式下面不进行记忆数据
+	if(Sys.Factoryflg || Sys.FilterTestFlg||Sys.Setupflg!=2) //工厂模式和滤网测试模式下面不进行记忆数据 未配置信息不进行数据存储
 		return;
 	if(Filter.Storeflg)  //滤网掉电记忆
 	{
@@ -6321,6 +6365,14 @@ AN00  AD电压检测  AN06 光敏
 3.自检时候的橙色灯和白色灯亮的bug的修复
 4.自检时候中间会 清除wifi信息.
 5.产测的时候，显示亮度改为最亮.主要是因为LED驱动里面全关了LED灯 只要在产测模式下禁用就好了.
+
+2022.02.22
+1.修复产测模式下不明灯亮的问题。未在最开始清除LED灯光。
+2.天瑞的正常配置信息之后现在会显示国家选项。
+3.现在未配置信息的情况下不会存储数据。，防止het产测之后按按键结束会存储不正确的配置信息。
+4.修复产测模式下，风机或者传感器故障有其他灯微亮的bug.
+5.修复产测模式在最后的几步如果遇到风机或者传感器故障，能继续往下走的问题。
+6.现在产测下无法进入快速滤网模式。
 */
 void hal_entry(void)
 {
