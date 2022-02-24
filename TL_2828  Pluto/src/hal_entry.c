@@ -76,7 +76,7 @@ void fDeviceSys_Init(void);
 		
 		
 volatile float Dutyoutput = 2200;
-#define  Duty_Limit_min 400
+#define  Duty_Limit_min 450
 #define  Duty_Limit_max 2600
 #define  Duty_outputoff 3000
 #define  Duty_start  2200
@@ -2439,7 +2439,7 @@ void fDisp_Plungin(void)  //上电显示
 
 
 
-
+// u16 spd11 = 2020;
 
 void fMotor_Ctrl(void)
 {
@@ -2450,7 +2450,8 @@ void fMotor_Ctrl(void)
 	static u8  microsetup = 0;
 	static u8  microsetup1 = 0;
 	static u16 sErr_5s=0;
-	static u16 Cnt = 0;
+	static u8 Cnt0 = 0;
+    static u8 Cnt1 = 0;
 	if(Sys.Factoryflg) // 产测模式下返回
 		return;
 	if(Sys.Errcode&(bit0|bit4)||Sys.motorpwmoutput==0)  //风机故障 或者 锁机的情况下
@@ -2622,6 +2623,7 @@ void fMotor_Ctrl(void)
 	}
 	else
 	{
+		// Motorpara.Spd_Output[0] = spd11;
 		if(Sys.FanspeedFB<200)
 		{
 			Dutyoutput = Duty_start;
@@ -2629,33 +2631,90 @@ void fMotor_Ctrl(void)
 		else
 		{
 			Pid.E_delta = Motorpara.Spd_Output[0]-Sys.FanspeedFB;
+            if(abs(Pid.E_delta) <=20)
+            {
+                if(++Cnt0>=10)
+                {
+                    Cnt0 = 10;
+                    Sys.steadyflg = 1;   //已经保持稳定
+                }
+                
+            }
+            else
+                Cnt0 = 0;
+
+            if(abs(Pid.E_delta) >=30)
+            {
+                 if(++Cnt1>=10)
+                {
+                    Cnt1 = 10;
+                    Sys.steadyflg = 0; //不稳定了
+                }
+            }
+            else
+                Cnt1 = 0;
 			if(++microsetup>=5)
 			{
 				microsetup = 0;
 				if(Sys.steadyflg==0)
 				{
-					if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=300)
+				
+					if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=350) //切换档位
 					{
-						if(Pid.E_delta>0)
-							Dutyoutput-=18;
-						else
-							Dutyoutput+=18;
+						if(Motorpara.Spd_Output[0] == 2020)
+						{				
+							if(Pid.E_delta>0) //加速
+							{
+								Dutyoutput -= 120;
+							}
+
+							else
+								Dutyoutput += 120;	
+						}
+						else if(Motorpara.Spd_Output[0] ==1425)
+						{
+							if(Pid.E_delta>0) //加速
+							{
+								Dutyoutput -= 100;
+							}
+								
+							else
+								Dutyoutput += 80;
+						}
+						else if(Motorpara.Spd_Output[0] == 1010)
+						{
+							if(Pid.E_delta>0)  //加速
+							{
+								Dutyoutput -= 100;
+							}
+							else
+								Dutyoutput += 80;
+							
+						}
+						else if(Motorpara.Spd_Output[0] == 550)
+						{
+							if(Pid.E_delta>0) //加速
+								Dutyoutput -= 80;
+							else
+								Dutyoutput += 60;
+						}
 							
 					}
-					else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=200)
+					// else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=200)
+					// {
+					// 	if(Pid.E_delta>0)
+					// 		Dutyoutput-=30;
+					// 	else
+					// 		Dutyoutput+=30;
+							
+					// }
+					else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=100)
 					{
 						if(Pid.E_delta>0)
 							Dutyoutput-=12;
 						else
 							Dutyoutput+=12;
 							
-					}
-					else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>100)
-					{
-						if(Pid.E_delta>0)
-							Dutyoutput-=6;
-						else
-							Dutyoutput+=6;
 					}
 					else
 					{
@@ -2664,40 +2723,34 @@ void fMotor_Ctrl(void)
 							microsetup1 = 0;
 							if(Pid.E_delta>0)
 							{
-								if(Pid.E_delta>70)
-									Dutyoutput-=18;
-								else if(Pid.E_delta>50)
-									Dutyoutput-=12;
+								if(Pid.E_delta>80)
+									Dutyoutput-=15;
 								else if(Pid.E_delta>40)
-									Dutyoutput-=6;
+									Dutyoutput-=10;
 								else
-									Dutyoutput-=3;
+								{
+                                   
+                                     Dutyoutput-=4;
+								}
 							}
 							else if(Pid.E_delta<0)
 							{
-								if(Pid.E_delta<-70)
-									Dutyoutput+=18;
-								else if(Pid.E_delta<-50)
-									Dutyoutput+=12;
+								if(Pid.E_delta<-80)
+									Dutyoutput+=15;
 								else if(Pid.E_delta<-40)
-									Dutyoutput+=6;
-								else
-									Dutyoutput+=3;
+									Dutyoutput+=10;
+								else 
+								{
+                                     Dutyoutput+=4;
+								}
+									
 							}
 						}
 					}
 						
 				}
 				
-				if(abs(Pid.E_delta) <=20)
-				{
-					Sys.steadyflg = 1;
-				}
-
-				if(abs(Pid.E_delta) >=30)
-				{
-					Sys.steadyflg  = 0;
-				}
+				
 			
 				if(Dutyoutput<=Duty_Limit_min)
 					Dutyoutput = Duty_Limit_min;
@@ -6373,6 +6426,10 @@ AN00  AD电压检测  AN06 光敏
 4.修复产测模式下，风机或者传感器故障有其他灯微亮的bug.
 5.修复产测模式在最后的几步如果遇到风机或者传感器故障，能继续往下走的问题。
 6.现在产测下无法进入快速滤网模式。
+
+2022.02.23
+1.缩短从静止到Turbo的电机提速时间.
+2.现在风速稳定的判断有个1S时间的连续，才能认定风速稳定或者不稳定.
 */
 void hal_entry(void)
 {
