@@ -225,6 +225,7 @@ typedef struct
 //	u8 ErrFlag;//传感器故障标志
 //	u8 Test30sec;
 	u16 PM25; // PM2.5传感器数值
+	u16 PM25tmp; // PM2.5传感器数值
 	u16 PM25Buf[8];
 	u32 PM25Total;
 //	u8 KeepCnt;
@@ -302,6 +303,7 @@ typedef struct
 	u8 Wifi_EWS_DONE_flg;  //easy wifi setup标志位 需要存储
 	u8 WifiEnable;
 	u8 Economic;
+	u8 facpm25check;
 	u8 Factoryflg;    //长按电源和灯 组合键 15S进入	响2声
 	u8 Factorysteps;  //工厂模式测试步骤
 	u8 Factorywifisteps; //工厂模式wifi步骤 1 2 3

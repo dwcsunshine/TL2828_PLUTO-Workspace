@@ -74,12 +74,15 @@ void fDeviceSys_Init(void);
 
 
 		
-		
-volatile float Dutyoutput = 2200;
 #define  Duty_Limit_min 450
 #define  Duty_Limit_max 2600
 #define  Duty_outputoff 3000
-#define  Duty_start  2200
+#define  Duty_start  2200	
+volatile float Dutyoutput = Duty_outputoff;
+volatile float Dutyoutputpre= Duty_outputoff;
+volatile float Dutyoutputlast= Duty_outputoff;
+
+
 
 
 u8 const sku[16][15]={
@@ -591,99 +594,15 @@ void fPower_Off(void) //关机操作
 void fCalculate_PM25(u32  PM25_LPO) 
 {
 	static u8 Index=0;
-	u16 Temp = 0;
-	if(PM25_LPO<=3840)
-	{
-		Temp=(u16)(PM25_LPO*353/3840);// 
-	} 
-	else if(PM25_LPO<=5520)
-	{
-		PM25_LPO -=3840;
-		Temp=(u16)(PM25_LPO*(496-353)/1680+353);//
-	} 
-	else if(PM25_LPO<=8640)
-	{
-		PM25_LPO-=5520;					
-		Temp=(u16)(PM25_LPO*(750-496)/3120+496);//2.59
-	} 
-	else if(PM25_LPO<=11760)
-	{
-		PM25_LPO-=8640;
-		Temp=(u16)(PM25_LPO*(1001-750)/3120+750);//2.24
-	} 
-	else if(PM25_LPO<=13440)
-	{
-		PM25_LPO-=11760;
-		Temp=(u16)(PM25_LPO*(1138-1001)/1680+1001);//4.7
-	} 
-	else if(PM25_LPO<=17760)
-	{
-		PM25_LPO-=13440;
-		Temp=(u16)(PM25_LPO*(1511-1138)/4320+1138);//4.9
-	} 
-	else if(PM25_LPO<=22800)
-	{
-		PM25_LPO-=17760;
-		Temp=(u16)(PM25_LPO*(2015-1511)/5040+1511);//5.3
-	} 
-	else if(PM25_LPO<=24960)
-	{
-		PM25_LPO-=22800;
-		Temp=(u16)(PM25_LPO*(2265-2015)/2160+2015);//6.9
-	} 
-	else if(PM25_LPO<=26880)
-	{
-		PM25_LPO-=24960;
-		Temp=(u16)(PM25_LPO*(2509-2265)/1920+2265);//6.9
-	} 
-	else if(PM25_LPO<=30240)
-	{
-		PM25_LPO-=26880;
-		Temp=(u16)(PM25_LPO*(2992-2509)/3360+2509);//6.9
-	} 
-	else if(PM25_LPO<=34800)
-	{
-		PM25_LPO-=30240;
-		Temp=(u16)(PM25_LPO*(3785-2992)/4560+2992);//6.9
 	
-	} 
-	
-	//	0.145	378.5		251.7		145 	34800			4560
-	
-	//	0.152	413.0		275.0				36480			1680
-	//	0.160	456.0		303.0				38400			1920
-	//	0.168	500.0		332.0				40320			1920
-	else if(PM25_LPO<=36480)
-	{
-		PM25_LPO-=34800;
-		Temp=(u16)(PM25_LPO*(4130-3785)/1680+3785);//6.9
-	
-	} 
-
-	else if(PM25_LPO<=38400)
-	{
-		PM25_LPO-=36480;
-		Temp=(u16)(PM25_LPO*(4560-4130)/1920+4130);//6.9
-	
-	} 
-
-	else if(PM25_LPO<=40320)
-	{
-		PM25_LPO-=38400;
-		Temp=(u16)(PM25_LPO*(5000-4560)/1920+4560);//6.9
-	
-	} 
-	else
-	{
-		Temp = 5000;
-	}
-	Temp = Temp/10;
 	Particle.PM25Total -=Particle.PM25Buf[Index];
-	Particle.PM25Buf[Index++] = Temp;
-	Particle.PM25Total+=Temp;
-	if(Index>=8)
+	Particle.PM25Buf[Index++] = PM25_LPO;
+	Particle.PM25Total+=PM25_LPO;
+	if(Index>=4)
 		Index = 0;
-	Particle.PM25 = (Particle.PM25Total>>3);
+	
+	Particle.PM25tmp = (Particle.PM25Total>>2);
+	Particle.PM25 = (Particle.PM25tmp>>3);
 }
 
 void fFactory_ParticleInit(void)
@@ -703,9 +622,11 @@ void fFactory_ParticleGet(void)
 	static u8 DustErrCnt = 0;
 	//更新数组，并求出数组的和，下面的方法可以提高效率
 	//求出P1的值	
-	Particle.P1TotalTime = Particle.P1Time*30;//加上新值
+	Sys.facpm25check = 0;
+	fCalculate_PM25(Particle.P1Time);
 	Particle.P1Time = 0;//清零时间	
-	fCalculate_PM25(Particle.P1TotalTime);
+	
+	Sys.facpm25check  = 1; //可以开始检测
 	if(Particle.PM25>= tPM25[market][Sys.AQI_LEVEL][1])
 	{
 		if(Sys.AQI_LEVEL<3)
@@ -1112,9 +1033,9 @@ void  fFacmode_Disp_Ctrl(void)
 					if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])<=50)
 					{
 						Sys.steadycnt++;
-						if(Sys.steadycnt>=30)
+						if(Sys.steadycnt>=20)
 						{
-							Sys.steadycnt = 30;
+							Sys.steadycnt = 10;
 							Sys.steadyflg = 1;
 						}
 					}
@@ -1160,56 +1081,22 @@ void  fFacmode_Disp_Ctrl(void)
 			}
 			else
 			{
-				Pid.SpeedFB2 = Pid.SpeedFB1;
-				Pid.SpeedFB1 = Sys.FanspeedFB;
-				Pid.E_delta = Motorpara.Spd_Output[0] - Sys.FanspeedFB ;
-				Pid.E_delta_BIAS = (Pid.SpeedFB1- Pid.SpeedFB2);
-				Pid.E_deltasum += Pid.E_delta;
-				if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=200)
-				{
-					Pid.Kp = 0.02;
+				if(Motorpara.Spd_Output[0] == 2020)
+				{				
+					Dutyoutput = 494;//482;	
 				}
-				else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=100)
+				else if(Motorpara.Spd_Output[0] ==1425)
 				{
-					Pid.Kp = 0.015;
+					Dutyoutput = 1118;//1105;	
 				}
-				else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>50)
+				else if(Motorpara.Spd_Output[0] == 1010)
 				{
-					Pid.Kp = 0.01;
+					Dutyoutput = 1553;//1541;	
 				}
-				else
-					Pid.Kp = 0.002;
-				Pid.Ki = 0;
-				Pid.Kd = 0;
-//				Pid.Ki = 0.0001;
-	//			Pid.Kd = 0.3;
-
-				if(abs(Pid.E_delta) <=20)
-					Pid.Kp = 0;
-				Pid.output = Pid.Kp*Pid.E_delta+Pid.E_deltasum*Pid.Ki+ Pid.E_delta_BIAS*Pid.Kd;
-
-				Dutyoutput = Dutyoutput-Pid.output;
-//				if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>50)
-//					Dutyoutput = Dutyoutput-Pid.output;
-//				else
-//				{
-//					if(Motorpara.Spd_Output[0]==Motorpara.Spd_Sleep[0])
-//					{
-//						Dutyoutput = 2020;
-//					}
-//					else if(Motorpara.Spd_Output[0]==Motorpara.Spd2[0])
-//					{
-//						Dutyoutput = 1560;
-//					}
-//					else if(Motorpara.Spd_Output[0]==Motorpara.Spd3[0])
-//					{
-//						Dutyoutput = 1110;
-//					}
-//					else if(Motorpara.Spd_Output[0]==Motorpara.Spd_Turbo[0])
-//					{
-//						Dutyoutput = 485;
-//					}
-//				}
+				else if(Motorpara.Spd_Output[0] == 550)
+				{
+					Dutyoutput = 2023;//2023;	
+				}
 			}
 			
 			R_GPT_DutyCycleSet(&g_PWM_motor_ctrl, (uint32_t)Dutyoutput,GPT_IO_PIN_GTIOCA);
@@ -2439,7 +2326,7 @@ void fDisp_Plungin(void)  //上电显示
 
 
 
-// u16 spd11 = 2020;
+u16 spd11 = 2020;
 
 void fMotor_Ctrl(void)
 {
@@ -2449,9 +2336,11 @@ void fMotor_Ctrl(void)
 	static u8 Motoroffdelay = 0;  // 电机延时关闭的标志 为0的时候可以直接关闭
 	static u8  microsetup = 0;
 	static u8  microsetup1 = 0;
-	static u16 sErr_5s=0;
+	static u16 sErr_30s=0;
 	static u8 Cnt0 = 0;
     static u8 Cnt1 = 0;
+	static float dutydelta = 0;
+	static u8 cnt = 0;
 	if(Sys.Factoryflg) // 产测模式下返回
 		return;
 	if(Sys.Errcode&(bit0|bit4)||Sys.motorpwmoutput==0)  //风机故障 或者 锁机的情况下
@@ -2467,15 +2356,15 @@ void fMotor_Ctrl(void)
 			Motoroffdelay = 2;  // 电机可以直接开启
 			if(Sys.FanspeedFB<100)  //连续5S风速反馈小于100  报风机故障
 			{
-				sErr_5s++;
-				if(sErr_5s>=300)
+				sErr_30s++;
+				if(sErr_30s>=300)
 				{
-					sErr_5s = 300;
+					sErr_30s = 300;
 					Sys.Errcode |=0x01;  // 5S之内没达到100转
 				}
 			}
 			else   // 风速正常 计数清除
-				sErr_5s = 0;
+				sErr_30s = 0;
 
 			
 			switch (DI.Port3_air.para7.opmode)
@@ -2574,7 +2463,7 @@ void fMotor_Ctrl(void)
 			if(Motoroffdelay)
 				Motoroffdelay--;
 			Motorpara.Spd_Output[0] = Motorpara.Spd_Off[0];
-			sErr_5s = 0;
+			sErr_30s = 0;
 			
 		}
 	}
@@ -2618,7 +2507,7 @@ void fMotor_Ctrl(void)
 	if(Motorpara.Spd_Output[0]==Motorpara.Spd_Off[0])
 	{
 		R_GPT_DutyCycleSet(&g_PWM_motor_ctrl,Duty_outputoff,GPT_IO_PIN_GTIOCA);
-		Dutyoutput = Duty_start;
+		Dutyoutput = Duty_outputoff;
 		
 	}
 	else
@@ -2631,133 +2520,180 @@ void fMotor_Ctrl(void)
 		else
 		{
 			Pid.E_delta = Motorpara.Spd_Output[0]-Sys.FanspeedFB;
-            if(abs(Pid.E_delta) <=20)
-            {
-                if(++Cnt0>=10)
-                {
-                    Cnt0 = 10;
-                    Sys.steadyflg = 1;   //已经保持稳定
-                }
+            // if(abs(Pid.E_delta) <=20)
+            // {
+            //     if(++Cnt0>=10)
+            //     {
+            //         Cnt0 = 10;
+            //         Sys.steadyflg = 1;   //已经保持稳定
+            //     }
                 
-            }
-            else
-                Cnt0 = 0;
+            // }
+            // else
+            //     Cnt0 = 0;
 
-            if(abs(Pid.E_delta) >=30)
-            {
-                 if(++Cnt1>=10)
-                {
-                    Cnt1 = 10;
-                    Sys.steadyflg = 0; //不稳定了
-                }
-            }
-            else
-                Cnt1 = 0;
-			if(++microsetup>=5)
+            // if(abs(Pid.E_delta) >=30)
+            // {
+            //      if(++Cnt1>=10)
+            //     {
+            //         Cnt1 = 10;
+            //         Sys.steadyflg = 0; //不稳定了
+            //     }
+            // }
+            // else
+            //     Cnt1 = 0;
+			if(++microsetup>=10)  //每秒调试
 			{
 				microsetup = 0;
-				if(Sys.steadyflg==0)
-				{
-				
-					if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=350) //切换档位
-					{
-						if(Motorpara.Spd_Output[0] == 2020)
-						{				
-							if(Pid.E_delta>0) //加速
-							{
-								Dutyoutput -= 120;
-							}
-
-							else
-								Dutyoutput += 120;	
-						}
-						else if(Motorpara.Spd_Output[0] ==1425)
-						{
-							if(Pid.E_delta>0) //加速
-							{
-								Dutyoutput -= 100;
-							}
-								
-							else
-								Dutyoutput += 80;
-						}
-						else if(Motorpara.Spd_Output[0] == 1010)
-						{
-							if(Pid.E_delta>0)  //加速
-							{
-								Dutyoutput -= 100;
-							}
-							else
-								Dutyoutput += 80;
-							
-						}
-						else if(Motorpara.Spd_Output[0] == 550)
-						{
-							if(Pid.E_delta>0) //加速
-								Dutyoutput -= 80;
-							else
-								Dutyoutput += 60;
-						}
-							
-					}
-					// else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=200)
-					// {
-					// 	if(Pid.E_delta>0)
-					// 		Dutyoutput-=30;
-					// 	else
-					// 		Dutyoutput+=30;
-							
-					// }
-					else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=100)
-					{
-						if(Pid.E_delta>0)
-							Dutyoutput-=12;
-						else
-							Dutyoutput+=12;
-							
-					}
-					else
-					{
-						if(++microsetup1>=10)
-						{
-							microsetup1 = 0;
-							if(Pid.E_delta>0)
-							{
-								if(Pid.E_delta>80)
-									Dutyoutput-=15;
-								else if(Pid.E_delta>40)
-									Dutyoutput-=10;
-								else
-								{
-                                   
-                                     Dutyoutput-=4;
-								}
-							}
-							else if(Pid.E_delta<0)
-							{
-								if(Pid.E_delta<-80)
-									Dutyoutput+=15;
-								else if(Pid.E_delta<-40)
-									Dutyoutput+=10;
-								else 
-								{
-                                     Dutyoutput+=4;
-								}
-									
-							}
-						}
-					}
-						
+				if(Motorpara.Spd_Output[0] == 2020)
+				{							
+					Dutyoutputpre = 494;//482;	
 				}
-				
-				
-			
+				else if(Motorpara.Spd_Output[0] ==1425)
+				{				
+					Dutyoutputpre = 1118;//1105;	
+				}
+				else if(Motorpara.Spd_Output[0] == 1010)
+				{
+					Dutyoutputpre = 1553;//1541;	
+				}
+				else if(Motorpara.Spd_Output[0] == 550)
+				{
+					Dutyoutputpre = 2023;//2023;	
+				}
+				else
+					Dutyoutputpre = Duty_start;
+
+				if(Dutyoutputlast != Dutyoutputpre) // 应该是切换风速过了
+				{
+					Dutyoutputlast = Dutyoutputpre;//确保只进来一次
+					dutydelta = (Dutyoutputpre-Dutyoutput);
+					dutydelta=dutydelta/6;
+					cnt = 6;
+
+				}
+				if(abs(Dutyoutputpre-Dutyoutput)<=40)
+					Dutyoutput = Dutyoutputpre;
+				else
+					Dutyoutput+=dutydelta;
+				if(cnt!=0)  //保险措施
+				{
+					cnt--;
+					if(cnt == 0)
+						Dutyoutput = Dutyoutputpre;
+				}
 				if(Dutyoutput<=Duty_Limit_min)
 					Dutyoutput = Duty_Limit_min;
-				else if(Dutyoutput>=Duty_Limit_max)
+				if(Dutyoutput>=Duty_Limit_max)
 					Dutyoutput = Duty_Limit_max;
-				
+		
 			}
+				
+				// if(++microsetup>=5)
+				// {
+				// 	microsetup = 0;
+				// 	if(Sys.steadyflg==0)
+				// 	{
+					
+				// 		if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=350) //切换档位
+				// 		{
+				// 			if(Motorpara.Spd_Output[0] == 2020)
+				// 			{				
+				// 				if(Pid.E_delta>0) //加速
+				// 				{
+				// 					Dutyoutput -= 120;
+				// 				}
+
+				// 				else
+				// 					Dutyoutput += 120;	
+				// 			}
+				// 			else if(Motorpara.Spd_Output[0] ==1425)
+				// 			{
+				// 				if(Pid.E_delta>0) //加速
+				// 				{
+				// 					Dutyoutput -= 100;
+				// 				}
+									
+				// 				else
+				// 					Dutyoutput += 80;
+				// 			}
+				// 			else if(Motorpara.Spd_Output[0] == 1010)
+				// 			{
+				// 				if(Pid.E_delta>0)  //加速
+				// 				{
+				// 					Dutyoutput -= 100;
+				// 				}
+				// 				else
+				// 					Dutyoutput += 80;
+								
+				// 			}
+				// 			else if(Motorpara.Spd_Output[0] == 550)
+				// 			{
+				// 				if(Pid.E_delta>0) //加速
+				// 					Dutyoutput -= 80;
+				// 				else
+				// 					Dutyoutput += 60;
+				// 			}
+								
+				// 		}
+				// 		// else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=200)
+				// 		// {
+				// 		// 	if(Pid.E_delta>0)
+				// 		// 		Dutyoutput-=30;
+				// 		// 	else
+				// 		// 		Dutyoutput+=30;
+								
+				// 		// }
+				// 		else if(abs(Sys.FanspeedFB-Motorpara.Spd_Output[0])>=100)
+				// 		{
+				// 			if(Pid.E_delta>0)
+				// 				Dutyoutput-=12;
+				// 			else
+				// 				Dutyoutput+=12;
+								
+				// 		}
+				// 		else
+				// 		{
+				// 			if(++microsetup1>=10)
+				// 			{
+				// 				microsetup1 = 0;
+				// 				if(Pid.E_delta>0)
+				// 				{
+				// 					if(Pid.E_delta>80)
+				// 						Dutyoutput-=15;
+				// 					else if(Pid.E_delta>40)
+				// 						Dutyoutput-=10;
+				// 					else
+				// 					{
+									
+				// 						Dutyoutput-=4;
+				// 					}
+				// 				}
+				// 				else if(Pid.E_delta<0)
+				// 				{
+				// 					if(Pid.E_delta<-80)
+				// 						Dutyoutput+=15;
+				// 					else if(Pid.E_delta<-40)
+				// 						Dutyoutput+=10;
+				// 					else 
+				// 					{
+				// 						Dutyoutput+=4;
+				// 					}
+										
+				// 				}
+				// 			}
+				// 		}
+							
+				// 	}
+					
+					
+				
+				// 	if(Dutyoutput<=Duty_Limit_min)
+				// 		Dutyoutput = Duty_Limit_min;
+				// 	else if(Dutyoutput>=Duty_Limit_max)
+				// 		Dutyoutput = Duty_Limit_max;
+					
+				// }
 		}
 		
 //		FG.delta_speed= abs(Motorpara.Spd_Output[0]-Sys.FanspeedFB);
@@ -6430,6 +6366,12 @@ AN00  AD电压检测  AN06 光敏
 2022.02.23
 1.缩短从静止到Turbo的电机提速时间.
 2.现在风速稳定的判断有个1S时间的连续，才能认定风速稳定或者不稳定.
+
+2022.02.26
+1.风速现在有新的对照表
+2.风机现在交给他自己调速，输出对应的占空比就好了。
+3.自检里面风速稳定也加快。
+4.自检里面PM传感器数值采样优化.
 */
 void hal_entry(void)
 {
@@ -6861,7 +6803,7 @@ void g_Timer_125us(timer_callback_args_t * p_args)  //12US左右的执行时间
 {
 
 	fFanFeedBackCalc();  // 风速计算
-	if(Sys.Factoryflg)
+	if(Sys.Factoryflg&&Sys.facpm25check)
 	{
 		if(0 == Pin_CheckPM25)
 		{
