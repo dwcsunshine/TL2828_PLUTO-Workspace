@@ -677,6 +677,10 @@ void  fFacmode_Disp_Ctrl(void)
 	LED_Ring_Dis();     //解决进入自检之后 部分灯光不会清除的问题
 	LED_Wifi_Amber_Dis();
 	LED_Wifi_White_Dis();
+	PWR_WIFI_EN();
+	 Motorpara.Spd_Sleep[0] =  Motorpara.Spd_Sleep[1] = 550;
+	 Motorpara.Spd_Turbo[0] = Motorpara.Spd_Turbo[1] = 2020;
+
 	if((Sys.Errcode&(bit0|bit1))==0) //解决故障状态下LED辉光问题
 	{
         switch(Sys.Factorysteps)
@@ -697,7 +701,7 @@ void  fFacmode_Disp_Ctrl(void)
             case 1:
                 for(i=0; i<4; i++) //获取数据参数
                     {
-                            t_src[i+4] = *((uint8_t *)(FLASH_FILTER_400+i));
+                        t_src[i+4] = *((uint8_t *)(FLASH_FILTER_400+i));
                     }
                 if(memcmp(&t_src[0],&t_src[4],4)==0) //数据参数获取 存储在Block0中
                 {
@@ -734,10 +738,9 @@ void  fFacmode_Disp_Ctrl(void)
                         LED_Wifi_Amber_En();
                     else
                         LED_Wifi_Amber_Dis();
-
                 break;
             case 3:	
-                Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
+              	Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
                 Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
                 DI.Port2_wifiu.para2.connection = wifi_C_not_connected;
                 DI.Port2_wifiu.para3.setup = wifi_S_requested; // 不会进入快速滤网了 把wifi清除 20220216	
@@ -5551,7 +5554,7 @@ void fDeviceData_Init(void)
 	PWR_WIFI_EN(); // 默认打开wifi电源
 	DI.Port2_wifiu.para2.connection = wifi_C_not_connected; //进入配网状态
 	DI.Port2_wifiu.para3.setup = wifi_S_requested;
-//	Sys.WifiEnable = 1;
+	Sys.WifiEnable = 1; // 默认得开启 2022.03.29
 	
 	
 	//-----------------------------Port3_air-----------------------------------------------------------
@@ -6372,6 +6375,11 @@ AN00  AD电压检测  AN06 光敏
 2.风机现在交给他自己调速，输出对应的占空比就好了。
 3.自检里面风速稳定也加快。
 4.自检里面PM传感器数值采样优化.
+
+
+2022.03.29
+1.修复het产测时候最高和最低风速不匹配的问题。用的2837的闪光灯最高最低风速不一样.
+2.修复未知原因造成wifi自检时候3.3V不打开的问题. 已修复 因为在初始化中没有把Sys.WifiEnable 置位.
 */
 void hal_entry(void)
 {
