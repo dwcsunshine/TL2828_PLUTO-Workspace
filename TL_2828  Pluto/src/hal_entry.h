@@ -104,7 +104,12 @@ typedef uint32_t  u32;
 #define LED_Wifi_White_Dis()  pCom6 = 1
 #define LED_Wifi_Amber_En()  pCom7 = 0
 #define LED_Wifi_Amber_Dis()  pCom7 = 1
-
+#define LED_RB1_En()  pCom4 = 0
+#define LED_RB1_Dis()  pCom4 = 1
+#define LED_RB2_En()  pCom3 = 0
+#define LED_RB2_Dis()  pCom3 = 1
+#define LED_RB3_En()  pCom2 = 0
+#define LED_RB3_Dis()  pCom2 = 1
 
 #define TESTpin_109		R_PORT1->PODR_b.PODR9
 

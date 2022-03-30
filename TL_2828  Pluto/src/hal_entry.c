@@ -605,6 +605,129 @@ void fCalculate_PM25(u32  PM25_LPO)
 	Particle.PM25 = (Particle.PM25tmp>>3);
 }
 
+
+void fChecksum_disp(void)
+{
+	static u16 flashcnt = 0;
+	static u16 flashpart = 0;
+	static u16 flashpart0 = 0;
+	static u16 flashpart1 = 0;
+	static u16 flashpart2 = 0;
+	LED_Ring_Dis();
+	LED_Wifi_Amber_Dis();
+	LED_Wifi_White_Dis();
+	LED_Filter_Dis();
+	flashpart0 = (Sys.checksumOption/100);              //百位
+	flashpart1 = (Sys.checksumOption%100/10); //十位
+	flashpart2 = (Sys.checksumOption%10);			//个位
+	if(flashcnt<1000)
+	{
+		flashpart = flashpart0;
+		
+		if((flashcnt%1000)<1000)
+		{
+			LED_Wifi_Amber_En();
+			LED_Wifi_White_En();
+			LED_Filter_En();  
+		}
+		
+	}
+	else if(flashcnt<2000)
+	{
+		flashpart = flashpart1;
+		if((flashcnt%1000)<1000)
+		{
+			LED_Wifi_White_En();
+		}
+		
+	}
+	else
+	{
+		flashpart = flashpart2;
+		if((flashcnt%1000)<1000)
+		{
+			LED_Wifi_Amber_En();
+		}
+		
+	}
+	if((flashcnt%1000)<1000)
+	{
+		switch(flashpart)
+		{
+			case 0:
+				LED_Ring_Dis();
+				break;
+			case 1:
+				LED_RB3_En();
+				break;
+			case 2:
+				LED_RB2_En();
+				break;
+			case 3:
+				LED_RB3_En();
+				LED_RB2_En();
+				break;
+			case 4:
+				LED_RB1_En();
+				break;
+			case 5:
+				LED_RB1_En();
+				LED_RB3_En();
+				break;
+			case 6:
+				LED_RB1_En();
+				LED_RB2_En();
+				break;
+			case 7:
+				LED_RB1_En();
+				LED_RB2_En();
+				LED_RB3_En();
+				break;
+			case 8:
+				LED_Ring_Blue_En();
+				break;
+			case 9:
+				LED_Ring_Blue_En();
+				LED_RB3_En();
+				break;
+			case 10:
+				LED_Ring_Blue_En();
+				LED_RB2_En();
+				break;
+			case 11:
+				LED_Ring_Blue_En();
+				LED_RB2_En();
+				LED_RB3_En();
+				break;
+			case 12:
+				LED_Ring_Blue_En();
+				LED_RB1_En();
+				break;
+			case 13:
+				LED_Ring_Blue_En();
+				LED_RB1_En();
+				LED_RB3_En();
+				break;
+			case 14:
+				LED_Ring_Blue_En();
+				LED_RB1_En();
+				LED_RB2_En();
+				break;
+			case 15:
+				LED_Ring_Blue_En();
+				LED_RB1_En();
+				LED_RB2_En();
+				LED_RB3_En();
+				break;
+		}
+	}
+
+	flashcnt++;
+	if(flashcnt>=3000)
+	{
+		flashcnt = 0;
+	}
+}
 void fFactory_ParticleInit(void)
 {
 //	Particle.Index = 0;
@@ -661,8 +784,10 @@ void  fFacmode_Disp_Ctrl(void)
 	static u16 i = 0;
 	static u16 tmp = 0;
 	static u16 flashcnt = 0;
+	static u16 flashpart = 0;
 	static u16 flashpart0 = 0;
 	static u16 flashpart1 = 0;
+	static u16 flashpart2 = 0;
 	static u8 sErr_5s = 0;
 	static signed long s32_ChangeValue = 0;
 	static unsigned long u32_ChangeValue = 0;
@@ -674,6 +799,7 @@ void  fFacmode_Disp_Ctrl(void)
 	Sys.eLight20S_Cnt = 20; // 只要有按键20计时重新计算
 	DI.Port3_air.para7.opmode = emodeTurbo;  // 模式设为Turbo
 	Sys.wifisetcnt = 0;
+	LED_Filter_Dis();
 	LED_Ring_Dis();     //解决进入自检之后 部分灯光不会清除的问题
 	LED_Wifi_Amber_Dis();
 	LED_Wifi_White_Dis();
@@ -836,67 +962,198 @@ void  fFacmode_Disp_Ctrl(void)
             case 10:
                 
                 break;
-            case 11: //显示SKU
-                if(flashcnt>=2000)
-                {
-                    if((flashcnt%1000)<500)
-                    {
-                        LED_Ring_Blue_En ();
-                    }
-                    else
-                    {
-                        LED_Ring_Blue_Dis ();
-                    }
-                }
-                else
-                {
-                    if((flashcnt%1000)<500)
-                    {
-                        LED_Ring_Red_En();
-                    }
-                    else
-                    {
-                        LED_Ring_Red_Dis();
-                    }
-                }
+            case 11: //显示ctn ACXXXX/85
+				if(memcmp(&DI.Port1_device.para5.ctn[2],"0850",4)==0)
+               	{ 
+					if(flashcnt>=1000)
+					{
+						if((flashcnt%1000)<500)
+						{
+							LED_Ring_Red_En ();
+						}
+						else
+						{
+							LED_Ring_Red_Dis ();
+						}
+					}
+					else
+					{
+						if((flashcnt%1000)<500)
+						{
+							LED_Ring_Blue_En();
+						}
+						else
+						{
+							LED_Ring_Blue_Dis();
+						}
+					}
+				}
+				else
+				{
+					if((flashcnt%1000)<500)  // 否则闪烁RB3闪烁
+					{
+						LED_RB3_En ();
+					}
+				}
                 flashcnt++;
-                if(flashcnt>=4000)
+                if(flashcnt>=2000)
                 {
                     flashcnt = 0;
                 }
                 break;
-            case 12: //显示版本
-                flashpart0 = (DI.Port1_device.para12.node0applicationversion[2]-0x30)*1000;
-                flashpart1 = ((DI.Port1_device.para12.node0applicationversion[4]-0x30)+1)*1000+flashpart0;
+			case 12: //显示地区 AC0850/XX
+                flashpart0 = (DI.Port1_device.para5.ctn[7]-0x30);
+                flashpart1 = (DI.Port1_device.para5.ctn[8]-0x30);
+				
+                if(flashcnt<1000)
+                {
+                    if((flashcnt%1000)<1000)
+                    {
+                       LED_Wifi_White_En();
+						switch(flashpart0)
+						{
+							case 0:
+								LED_Ring_Blue_En();
+								break;
+							case 1:
+								LED_RB3_En();
+								break;
+							case 2:
+								LED_RB2_En();
+								break;
+							case 3:
+								LED_RB1_En();
+								break;
+							case 4:
+								LED_Ring_Blue_En();
+								LED_RB3_En();
+								break;
+							case 5:
+								LED_Ring_Blue_En();
+								LED_RB2_En();
+								break;
+							case 6:
+								LED_Ring_Blue_En();
+								LED_RB1_En();
+								break;
+							case 7:
+								LED_RB2_En();
+								LED_RB3_En();
+								break;
+							case 8:
+								LED_Ring_Blue_En();
+								LED_RB2_En();
+								LED_RB3_En();
+								break;
+							case 9:
+								LED_Ring_Blue_En();
+								LED_Ring_Red_En();
+								break;
+						}
+                    }
+                   
+                }
+                else
+                {
+                    if((flashcnt%1000)<1000)
+                    {
+                        LED_Wifi_Amber_En();
+						switch(flashpart1)
+						{
+							case 0:
+								LED_Ring_Blue_En();
+								break;
+							case 1:
+								LED_RB3_En();
+								break;
+							case 2:
+								LED_RB2_En();
+								break;
+							case 3:
+								LED_RB1_En();
+								break;
+							case 4:
+								LED_Ring_Blue_En();
+								LED_RB3_En();
+								break;
+							case 5:
+								LED_Ring_Blue_En();
+								LED_RB2_En();
+								break;
+							case 6:
+								LED_Ring_Blue_En();
+								LED_RB1_En();
+								break;
+							case 7:
+								LED_RB2_En();
+								LED_RB3_En();
+								break;
+							case 8:
+								LED_Ring_Blue_En();
+								LED_RB2_En();
+								LED_RB3_En();
+								break;
+							case 9:
+								LED_Ring_Blue_En();
+								LED_Ring_Red_En();
+								break;
+						}
+                    }
+                }
+                flashcnt++;
+                if(flashcnt>=2000)
+                {
+                    flashcnt = 0;
+                }
+                break;
+			case 13: //显示版本
+                flashpart0 = (DI.Port1_device.para12.node0applicationversion[0]-0x30)*1000;
+                flashpart1 = (DI.Port1_device.para12.node0applicationversion[2]-0x30);
+				flashpart = ((flashpart1%2)+1) *1000;
+	
                 if(flashcnt<flashpart0)
                 {
                     if((flashcnt%1000)<500)
                     {
-                        LED_Ring_Blue_En ();
+                       	LED_Filter_En();
+						LED_Ring_Blue_En();	
                     }
-                    else
-                    {
-                        LED_Ring_Blue_Dis ();
-                    }
+                   
                 }
                 else
                 {
                     if((flashcnt%1000)<500)
                     {
-                        LED_Filter_En ();
-                    }
-                    else
-                    {
-                        LED_Filter_Dis ();
+                        LED_Filter_En();
+						switch(flashpart1)
+						{
+							case 0:
+							case 1:
+								LED_RB3_En();
+								break;
+							case 2:
+							case 3:
+								LED_RB3_En();
+								LED_RB2_En();
+								break;
+							case 4:
+							case 5:
+								LED_Ring_Red_En();
+								break;
+							
+						}
                     }
                 }
                 flashcnt++;
-                if(flashcnt>=flashpart1)
+                if(flashcnt>=(flashpart+flashpart0))
                 {
                     flashcnt = 0;
                 }
                 break;
-            case 13: //复位
+            case 14: //显示核对码
+                fChecksum_disp();
+                break;
+            case 15: //复位
     //			fDeviceSys_Init();
     //			fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
     //			DI.Port3_air.para2.power = 0;	
@@ -958,7 +1215,7 @@ void  fFacmode_Disp_Ctrl(void)
 			}
 		}
 		
-		if(Sys.WifiEnable&& Sys.Factorysteps>=3)
+		if(Sys.WifiEnable&& Sys.Factorysteps>=3 && Sys.Factorysteps<11)
 		{
 			if(Sys.Factorywifisteps == 0)
 			{
@@ -1196,15 +1453,24 @@ void fFactory_Key_Process(void) //T =5ms
 					Sys.Factorysteps = 12;
 						Buz_Once();
 				}
-				
+				else if(Sys.Factorysteps == 12)
+				{
+					Sys.Factorysteps = 13;
+						Buz_Once();
+				}
+				else if(Sys.Factorysteps == 13)
+				{
+					Sys.Factorysteps = 14;
+						Buz_Once();
+				}
 		        break; 
 			 case KEY_POWER:  //
 		        if(KeyStatus & KEY_ShortPress) //短按只会执行一次
 		        {
 		            KeyStatus&=~KEY_ShortPress;
-					if(Sys.Factorysteps == 12)
+					if(Sys.Factorysteps == 14)
 					{
-						Sys.Factorysteps = 13;
+						Sys.Factorysteps = 15;
 						fDeviceSys_Init();
 						fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
 						fMemory_Read(); //确保可以正常读取信息
@@ -1942,7 +2208,6 @@ void fDisp_LedDriver(void)
 	static u8 s_Dim1_Cnt=0;
 	volatile u16 gAQIduty_Bluetmp = 0;
 	volatile u16 gAQIduty_Redtmp = 0;
-    static u16 flashcnt = 0;
     static u8 cnt = 0;
 	if(Sys.Factoryflg == 0) //非工厂模式下
          LED_Ring_Dis();
@@ -1951,33 +2216,7 @@ if(Sys.Setupflg == 1 &&Sys.Factoryflg==0 ) // 非工厂模式下  天瑞写入�
     if(++cnt>=8)
     {
         cnt = 0;
-        if(flashcnt>=2000)
-        {
-            if((flashcnt%1000)<500)
-            {
-                LED_Ring_Blue_En ();
-            }
-            else
-            {
-                LED_Ring_Blue_Dis ();
-            }
-        }
-        else
-        {
-            if((flashcnt%1000)<500)
-            {
-                LED_Ring_Red_En();
-            }
-            else
-            {
-                LED_Ring_Red_Dis();
-            }
-        }
-        flashcnt++;
-        if(flashcnt>=4000)
-        {
-            flashcnt = 0;
-        }
+		fChecksum_disp();
     }
     return;
 }
@@ -5508,8 +5747,8 @@ void fDeviceData_Init(void)
 	
 	
 	DI.Port1_device.para12.Props = 0x17;
-	DI.Port1_device.para12.Lenths = strlen("0.1.0");
-	strcpy(&DI.Port1_device.para12.node0applicationversion[0],"0.1.0");
+	DI.Port1_device.para12.Lenths = strlen("1.0.0");
+	strcpy(&DI.Port1_device.para12.node0applicationversion[0],"1.0.0");
 	if(*(u8 *)(0xfff9) == 0x2e  && *(u8 *)(0xfffb)== 0x2e )
 	{
 		p = 0xfff8;
@@ -6377,9 +6616,14 @@ AN00  AD电压检测  AN06 光敏
 4.自检里面PM传感器数值采样优化.
 
 
-2022.03.29
+2022.03.29 
 1.修复het产测时候最高和最低风速不匹配的问题。用的2837的闪光灯最高最低风速不一样.
 2.修复未知原因造成wifi自检时候3.3V不打开的问题. 已修复 因为在初始化中没有把Sys.WifiEnable 置位.
+
+2022.03.30 
+1.新增加一些规则，以及机型信息，主要是产测时候关于版本的显示。详情见最新的SKU信息list。
+2.软件版本现在改为1.0.0.
+3.现在配置信息完成会显示配置码.灯光组合表示.
 */
 void hal_entry(void)
 {
