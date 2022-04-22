@@ -9,7 +9,6 @@
 //#define TEST 0
 
 //#define TouchICVersion 0x01
-
 #define PM25LIB (1)
 typedef uint8_t u8;
 typedef uint16_t  u16;
@@ -297,7 +296,7 @@ typedef struct
 	u16 lightADvalue_12bit;  //12bit
 	u16 lightADvaluetmp_12bit;  //12bit
 	u16 PowerADvalue_12bit;
-
+	u8 powertmp; // 开关缓存
 	u16 checksumOption;// 配置信息校验和
 	u16 Wifitimeoutcnt; // wifi配置超时时间 一般按15分钟计算
 	u16 WifiCommtimeoutcnt; //wifi模块和窜口通讯超时计数

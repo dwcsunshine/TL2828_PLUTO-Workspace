@@ -1153,7 +1153,32 @@ void  fFacmode_Disp_Ctrl(void)
             case 14: //显示核对码
                 fChecksum_disp();
                 break;
-            case 15: //复位
+			case 15:  // 判断wifi自检是否成功，无wifi机型就直接判断OK通过
+				if(Sys.WifiEnable)
+				{
+					if(Sys.Factorywifisteps >3) //清0是wifi 检测成功 wifi自己会把该标志位清除
+					{
+						LED_Ring_Blue_En();
+						LED_Wifi_White_En(); //wifi自检成功 白灯常量
+						LED_Wifi_Amber_Dis(); // 修复bug 20220216 白灯和橙灯同时亮起的bug
+						Sys.Wifi_EWS_DONE_flg = 0; // 手动发起配网操作
+						Sys.Wifitimeoutcnt = 0; //wifi配网超时时间重新开始计算
+						DI.Port2_wifiu.para2.connection = wifi_C_not_connected;
+						DI.Port2_wifiu.para3.setup = wifi_S_requested;	
+					}
+					else
+					{
+						LED_Ring_Red_En();
+						LED_Wifi_Amber_En();
+					}
+				}
+				else
+				{
+					LED_Ring_Blue_En();
+					LED_Wifi_White_En();
+				}
+				break;
+            case 16: //复位
     //			fDeviceSys_Init();
     //			fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
     //			DI.Port3_air.para2.power = 0;	
@@ -1463,14 +1488,19 @@ void fFactory_Key_Process(void) //T =5ms
 					Sys.Factorysteps = 14;
 						Buz_Once();
 				}
+				else if(Sys.Factorysteps == 14)
+				{
+					Sys.Factorysteps = 15;
+						Buz_Once();
+				}
 		        break; 
 			 case KEY_POWER:  //
 		        if(KeyStatus & KEY_ShortPress) //短按只会执行一次
 		        {
 		            KeyStatus&=~KEY_ShortPress;
-					if(Sys.Factorysteps == 14)
+					if(Sys.Factorysteps == 15)
 					{
-						Sys.Factorysteps = 15;
+						Sys.Factorysteps = 16;
 						fDeviceSys_Init();
 						fDeviceData_Init();  //设备的一些信息初始化 包括初始化每一个port的数据
 						fMemory_Read(); //确保可以正常读取信息
@@ -3030,6 +3060,8 @@ void fMemory_Deal(void)  //掉电记忆处理
 
 	static u8 sEepWritedevice;
 	static u8 sEepWritesys;
+	static u8 sEepWritedevicetimes = 0;
+	static u8 sEepWritesystimes = 0;
 	u8 i = 0;
 	u16 volatile datatmp = 0;
 	u8 t_src[50] = {0};
@@ -3070,13 +3102,20 @@ void fMemory_Deal(void)  //掉电记忆处理
 	{
 		if(++sEepWritedevice>=50)
 		{
-			sEepWritedevice = 0;		
-			fFLASH_WRITE(FLASH_BLOCK3_PORT1DEVICE_C000,&t_src[0],i); //device数据写入FLASH_BLOCK3_PORT1DEVICE_C000 不太会改变
-			return;
+			sEepWritedevice = 0;
+			if(sEepWritedevicetimes<20)		
+			{
+				sEepWritedevicetimes++;
+				fFLASH_WRITE(FLASH_BLOCK3_PORT1DEVICE_C000,&t_src[0],i); //device数据写入FLASH_BLOCK3_PORT1DEVICE_C000 不太会改变
+				return;
+			}
 		}	
 	}
 	else
+	{
+		sEepWritedevicetimes = 0;
 		sEepWritedevice = 0;
+	}
 	
 	memset(&t_src[0],0,sizeof(t_src));
 	i = 0;
@@ -3105,37 +3144,31 @@ void fMemory_Deal(void)  //掉电记忆处理
 	t_src[i++] = datatmp&0xff;
 	if(memcmp(((uint8_t *)(FLASH_SYSSTATUS_800)),&t_src[0],i)!=0 && memcmp(((uint8_t *)(FLASH_SYSSTATUS_A00)),&t_src[0],i)!=0)
 	{
-		if((++sEepWritesys>=50 ) || DI.Port3_air.para2.power==0) //关机下立马记忆
+		if(Sys.powertmp != DI.Port3_air.para2.power )  //从开机到关机 1S之后记忆. 20220422
+		{
+			Sys.powertmp = DI.Port3_air.para2.power;
+			if(DI.Port3_air.para2.power==0)  
+			{
+				if(sEepWritesys<40)  // 防止出问题 一直赋值40
+					sEepWritesys = 40;
+			}
+			
+		}
+		if((++sEepWritesys>=50 ) ) //20220422 取消关机立马记忆 
 		{
 			sEepWritesys = 0;
-			i = 0;
-			Sys.IAQL_memvalue = DI.Port3_air.para9.iaql;
-			Sys.PM25_memvalue = DI.Port3_air.para10.pm25; //掉电之前记忆当前数据
-			t_src[i++] = 0xfe;
-			t_src[i++] = 0xff;
-			i++;// 
-			t_src[i++] = Sys.wifisetcnt; // wifi配置次数
-			t_src[i++] = Sys.Wifi_EWS_DONE_flg; //wifi使用
-			t_src[i++] = DI.Port3_air.para2.power;
-			t_src[i++] = DI.Port3_air.para17.aqit;
-			t_src[i++] = Sys.IAQL_memvalue; //IAI的当前值
-			t_src[i++] = (Sys.PM25_memvalue>>8)&0xff; //PM25的当前值 MSB
-			t_src[i++] = Sys.PM25_memvalue&0xff; //PM25的当前值 LSB
-			t_src[i++] = DI.Port3_air.para3.childLock;
-			t_src[i++] = DI.Port3_air.para4.AQILight;
-			t_src[i++] = DI.Port3_air.para5.UIlight;
-			t_src[i++] = DI.Port3_air.para6.userautomodesetting;
-			t_src[i++] = DI.Port3_air.para7.opmode;
-			t_src[i++] = DI.Port3_air.para15.ddp;
-			t_src[2] = i-3; // 待记忆实体个数  
-			datatmp=fCRC16_cal(&t_src[3], t_src[2]);
-			t_src[i++] = datatmp>>8;
-			t_src[i++] = datatmp&0xff;
-			fFLASH_WRITE(FLASH_BLOCK2_SYSSTATUS_8000,&t_src[0],i); //系统数据写入FLASH_BLOCK2_SYSSTATUS_8000  经常改变
+			if(sEepWritesystimes<20)
+			{
+				sEepWritesystimes++;
+				fFLASH_WRITE(FLASH_BLOCK2_SYSSTATUS_8000,&t_src[0],i); //系统数据写入FLASH_BLOCK2_SYSSTATUS_8000  经常改变
+			}
 		}
 	}
 	else
+	{
+		sEepWritesystimes = 0;
 		sEepWritesys = 0;
+	}
 	
 }
 
@@ -6624,6 +6657,14 @@ AN00  AD电压检测  AN06 光敏
 1.新增加一些规则，以及机型信息，主要是产测时候关于版本的显示。详情见最新的SKU信息list。
 2.软件版本现在改为1.0.0.
 3.现在配置信息完成会显示配置码.灯光组合表示.
+
+2022.04.21
+1.现在自检增加一步。会显示wifi是否自检成功.
+2.软件版本升级为V1.1.0
+
+2022.04.22  软件版本V1.1.0 
+1.取消关机下直接存，还是需要等待1S.，从开机到关机的时候，会1S延时存储.
+2.强化E方的操作，现在E方如果连续写入20C次数据不正确，那么接下来不会进入E方操作.
 */
 void hal_entry(void)
 {
@@ -6639,7 +6680,7 @@ void hal_entry(void)
 	pmInit(market,Sys.PM25_TFa,Sys.PM25_TFb); // PM2.5传感器初始化
 	#endif
    	__enable_irq(); //开启全部中断	
-   	gOnoffstatus = DI.Port3_air.para2.power; // 先把两者赋同样的值
+   	Sys.powertmp = gOnoffstatus = DI.Port3_air.para2.power; // 先把三者赋同样的值
 	// Sys.Setupflg = 2;
 	#if BSP_TZ_SECURE_BUILD
     /* Enter non-secure code */
